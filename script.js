@@ -1,14 +1,15 @@
 // Pre-execution values
 const CHOICES = ["rock", "paper", "scissors"];
-const ROUNDS = 5;
+// const ROUNDS = 5;
 
 /*
-Game of 5 rounds
+Game Function
   It should:
     - Keep scores
     - Declare Winner
 */
-function game() {
+async function game() {
+	const buttonsContainer = document.querySelector(".buttons-container");
 	const playerChoices = [];
 	const computerChoices = [];
 	let userScore = 0;
@@ -16,12 +17,13 @@ function game() {
 	let currentRound = 1;
 	let scoreBoard = generateScoreBoard(0, 0);
 	// Create a loop that will play 5 rounds
-	while (currentRound <= ROUNDS) {
-		playRound();
+	while (userScore < 5 && computerScore < 5) {
+		await playRound();
 		scoreBoard = generateScoreBoard(userScore, computerScore);
 		console.log(scoreBoard);
 		currentRound++;
 	}
+	// Declare Winner
 	console.log(declareWinner(scoreBoard));
 	// Create a function to generate score board
 	function generateScoreBoard(userScore = 0, computerScore = 0) {
@@ -36,76 +38,78 @@ function game() {
 		if (userScore === computerScore) return "Tie";
 		return `${userScore > computerScore ? "Player" : "Computer"} is the winner`;
 	}
-
-	// TODO - Create a function that will play a round
-	function playRound() {
-		const playerChoice = getUserChoice();
-		if (playerChoice === undefined) {
-			console.log("Invalid input");
-			currentRound--;
-			return;
-		}
-		updateChoices(playerChoices, playerChoice);
+	async function playRound() {
+		const playerChoice = await waitForUserSelect();
 		const computerChoice = getComputerChoice();
-		updateChoices(computerChoices, computerChoice);
+		updateChoices(playerChoice, computerChoice);
 		const winner = getRoundWinner();
 		updateScore(winner);
-
+		displayMessage(winner, playerChoice, computerChoice);
 		console.log("playerChoices: ", playerChoices, "\n", "computerChoices: ", computerChoices);
 		console.log("Round: ", currentRound);
-	}
 
-	// TODO - Create a function that will get computer's choice
-	function getComputerChoice() {
-		const randomNumber = getRandomNumberInARange(0, 2);
-		return CHOICES[randomNumber];
-	}
-	// TODO - Create a function that will prompt user's choice
-	function getUserChoice() {
-		const userChoiceIndex = prompt(`Choose rock, paper or scissors\n\n 0 - rock\n 1 - paper\n 2 - scissors`);
-		return CHOICES[userChoiceIndex];
-	}
-	// Create a function to get a random number between 0 and 2
-	function getRandomNumberInARange(startIndex, endIndex) {
-		return Math.floor(Math.random() * (endIndex + 1 - startIndex) + startIndex);
-	}
+		function waitForUserSelect() {
+			return new Promise((resolve) => {
+				buttonsContainer.addEventListener("click", (e) => {
+					const target = e.target;
+					switch (target.id) {
+						case "rock":
+						case "paper":
+						case "scissors":
+							resolve(target.id);
+					}
+				});
+			});
+		}
+		function getRoundWinner() {
+			const winnerSign = checkWinner(playerChoice, computerChoice);
+			switch (winnerSign) {
+				case 0:
+					return "Tie";
 
-	// Create a function to
-	function getRoundWinner() {
-		const playerSelection = playerChoices[playerChoices.length - 1];
-		const computerSelection = computerChoices[computerChoices.length - 1];
-		const winnerSign = checkWinner(playerSelection, computerSelection);
-		switch (winnerSign) {
-			case 0:
-				return "Tie";
+				case 1:
+					return "Player";
 
-			case 1:
-				return "Player";
+				case -1:
+					return "Computer";
 
-			case -1:
-				return "Computer";
+				default:
+					return "Error";
+			}
 
-			default:
-				return "Error";
+			function checkWinner(playerChoice, computerChoice) {
+				if (playerChoice === computerChoice) {
+					return 0;
+				} else if (
+					(playerChoice === "rock" && computerChoice === "scissors") ||
+					(playerChoice === "paper" && computerChoice === "rock") ||
+					(playerChoice === "scissors" && computerChoice === "paper")
+				) {
+					return 1;
+				} else {
+					return -1;
+				}
+			}
 		}
 
-		// Create a function to check the winner
-		function checkWinner() {
-			if (playerSelection === computerSelection) {
-				return 0;
-			} else if (
-				(playerSelection === "rock" && computerSelection === "scissors") ||
-				(playerSelection === "paper" && computerSelection === "rock") ||
-				(playerSelection === "scissors" && computerSelection === "paper")
-			) {
-				return 1;
+		function displayMessage(winner, playerChoice, computerChoice) {
+			if (winner === "Player") {
+				console.log(`You win! ${playerChoice} beats ${computerChoice}`);
+			} else if (winner === "Computer") {
+				console.log(`You lose! ${computerChoice} beats ${playerChoice}`);
 			} else {
-				return -1;
+				console.log("It's a tie!");
 			}
 		}
 	}
 
-	// Create a function to update score
+	function getComputerChoice() {
+		const randomNumber = getRandomNumberInARange(0, 2);
+		return CHOICES[randomNumber];
+	}
+	function getRandomNumberInARange(startIndex, endIndex) {
+		return Math.floor(Math.random() * (endIndex + 1 - startIndex) + startIndex);
+	}
 	function updateScore(winner) {
 		switch (winner) {
 			case "Player":
@@ -116,8 +120,9 @@ function game() {
 				break;
 		}
 	}
-	// Create a function to update choices
-	function updateChoices(choices, choice) {
-		choices.push(choice);
+	function updateChoices(playerChoice, computerChoice) {
+		playerChoices.push(playerChoice);
+		computerChoices.push(computerChoice);
 	}
 }
+game();
