@@ -1,6 +1,5 @@
 // Pre-execution values
 const CHOICES = ["rock", "paper", "scissors"];
-// const ROUNDS = 5;
 
 /*
 Game Function
@@ -8,46 +7,110 @@ Game Function
     - Keep scores
     - Declare Winner
 */
+// This game would run until either side reaches 5 points
 async function game() {
 	const buttonsContainer = document.querySelector(".buttons-container");
 	const playerChoices = [];
 	const computerChoices = [];
-	let userScore = 0;
-	let computerScore = 0;
 	let currentRound = 1;
 	let scoreBoard = generateScoreBoard(0, 0);
-	// Create a loop that will play 5 rounds
-	while (userScore < 5 && computerScore < 5) {
-		await playRound();
-		scoreBoard = generateScoreBoard(userScore, computerScore);
-		console.log(scoreBoard);
+	let resultMessage = "";
+	while (scoreBoard.userScore < 5 && scoreBoard.computerScore < 5) {
+		const roundData = await playRound();
+		const { playerChoice, computerChoice, winner } = roundData;
+		updateChoices(playerChoice, computerChoice);
+		updateResultMessage(winner, playerChoice, computerChoice);
+		displayResultMessage(resultMessage);
+		updateScoreBoard(scoreBoard, winner);
+		displayScoreBoard(scoreBoard);
+		updateRound();
+		displayRound();
+	}
+
+	declareWinner(scoreBoard);
+
+	function updateRound() {
 		currentRound++;
 	}
-	// Declare Winner
-	console.log(declareWinner(scoreBoard));
-	// Create a function to generate score board
+	function displayRound() {
+		const roundText = document.querySelector(".round-counter .current-round");
+		roundText.textContent = currentRound;
+	}
+	function updateResultMessage(winner, playerChoice, computerChoice) {
+		if (winner === "Player") {
+			resultMessage = `You win! ${playerChoice} beats ${computerChoice}`;
+		} else if (winner === "Computer") {
+			resultMessage = `You lose! ${computerChoice} beats ${playerChoice}`;
+		} else {
+			resultMessage = "It's a tie!";
+		}
+	}
+	function displayResultMessage(message) {
+		const resultText = document.querySelector(".result-text");
+		resultText.textContent = message;
+	}
+	function displayScoreBoard(scoreBoard) {
+		const userScoreElement = document.querySelector("#user-score");
+		const computerScoreElement = document.querySelector("#computer-score");
+		userScoreElement.textContent = scoreBoard.userScore;
+		computerScoreElement.textContent = scoreBoard.computerScore;
+	}
 	function generateScoreBoard(userScore = 0, computerScore = 0) {
 		return {
 			userScore,
 			computerScore,
 		};
 	}
-	// Create a function to declare winner
+	function updateScoreBoard(scoreBoard, winner) {
+		switch (winner) {
+			case "Player":
+				scoreBoard.userScore++;
+				break;
+			case "Computer":
+				scoreBoard.computerScore++;
+				break;
+		}
+	}
 	function declareWinner(scoreBoard) {
-		const { userScore, computerScore } = scoreBoard;
-		if (userScore === computerScore) return "Tie";
-		return `${userScore > computerScore ? "Player" : "Computer"} is the winner`;
+		const winner = getGameWinner(scoreBoard);
+		const message = generateWinnerMessage(winner);
+		updateResultMessage(message);
+		displayResultMessage(message);
+
+		function generateWinnerMessage(winner) {
+			switch (winner) {
+				case "Player":
+					return `You are the winner!`;
+				case "Computer":
+					return `Computer is the winner!`;
+				case "Tie":
+					return `It's a tie!`;
+			}
+		}
+		function getGameWinner(scoreBoard) {
+			let winner = calcGameWinner();
+			return winner;
+			function calcGameWinner() {
+				const { userScore, computerScore } = scoreBoard;
+				if (userScore === computerScore) return "Tie";
+				return userScore > computerScore ? "Player" : "Computer";
+			}
+		}
+	}
+
+	function updateChoices(playerChoice, computerChoice) {
+		playerChoices.push(playerChoice);
+		computerChoices.push(computerChoice);
 	}
 	async function playRound() {
 		const playerChoice = await waitForUserSelect();
 		const computerChoice = getComputerChoice();
-		updateChoices(playerChoice, computerChoice);
 		const winner = getRoundWinner();
-		updateScore(winner);
-		displayMessage(winner, playerChoice, computerChoice);
-		console.log("playerChoices: ", playerChoices, "\n", "computerChoices: ", computerChoices);
-		console.log("Round: ", currentRound);
-
+		return {
+			winner,
+			playerChoice,
+			computerChoice,
+		};
 		function waitForUserSelect() {
 			return new Promise((resolve) => {
 				buttonsContainer.addEventListener("click", (e) => {
@@ -61,8 +124,12 @@ async function game() {
 				});
 			});
 		}
+		function getComputerChoice() {
+			const randomNumber = getRandomNumberInARange(0, 2);
+			return CHOICES[randomNumber];
+		}
 		function getRoundWinner() {
-			const winnerSign = checkWinner(playerChoice, computerChoice);
+			const winnerSign = calcRoundWinner(playerChoice, computerChoice);
 			switch (winnerSign) {
 				case 0:
 					return "Tie";
@@ -77,7 +144,7 @@ async function game() {
 					return "Error";
 			}
 
-			function checkWinner(playerChoice, computerChoice) {
+			function calcRoundWinner(playerChoice, computerChoice) {
 				if (playerChoice === computerChoice) {
 					return 0;
 				} else if (
@@ -91,38 +158,10 @@ async function game() {
 				}
 			}
 		}
-
-		function displayMessage(winner, playerChoice, computerChoice) {
-			if (winner === "Player") {
-				console.log(`You win! ${playerChoice} beats ${computerChoice}`);
-			} else if (winner === "Computer") {
-				console.log(`You lose! ${computerChoice} beats ${playerChoice}`);
-			} else {
-				console.log("It's a tie!");
-			}
-		}
-	}
-
-	function getComputerChoice() {
-		const randomNumber = getRandomNumberInARange(0, 2);
-		return CHOICES[randomNumber];
-	}
-	function getRandomNumberInARange(startIndex, endIndex) {
-		return Math.floor(Math.random() * (endIndex + 1 - startIndex) + startIndex);
-	}
-	function updateScore(winner) {
-		switch (winner) {
-			case "Player":
-				userScore++;
-				break;
-			case "Computer":
-				computerScore++;
-				break;
-		}
-	}
-	function updateChoices(playerChoice, computerChoice) {
-		playerChoices.push(playerChoice);
-		computerChoices.push(computerChoice);
 	}
 }
 game();
+
+function getRandomNumberInARange(startIndex, endIndex) {
+	return Math.floor(Math.random() * (endIndex + 1 - startIndex) + startIndex);
+}
